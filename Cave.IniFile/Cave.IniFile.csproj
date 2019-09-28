@@ -10,13 +10,13 @@
     <FileVersion>$([System.DateTime]::UtcNow.Year).$([System.DateTime]::UtcNow.ToString("MMdd")).$([System.DateTime]::UtcNow.ToString("HHmm")).$([System.DateTime]::UtcNow.ToString("ssfff"))</FileVersion>
     <LangVersion>latest</LangVersion>
     <!--project-->
-    <RootNamespace>Cave.Settings</RootNamespace>
+    <RootNamespace>Cave</RootNamespace>
     <AssemblyOriginatorKeyFile>Cave.IniFile.snk</AssemblyOriginatorKeyFile>
-    <Product>CaveSystems Settings Library</Product>
+    <Product>CaveSystems INI file library</Product>
     <PackageTags>CaveSystems Settings Configuration IniFile IniReader IniWriter</PackageTags>
-    <Description>CaveSystems Settings Bibliothek. This packages contains classes for ini(tialization file) based configurations.</Description>
-    <PackageProjectUrl>https://github.com/CaveSystems/cave-settings</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CaveSystems/cave-settings</RepositoryUrl>
+    <Description>CaveSystems INI File Library. This packages contains classes for ini(tialization file) based configurations.</Description>
+    <PackageProjectUrl>https://github.com/CaveSystems/cave-inifile</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CaveSystems/cave-inifile</RepositoryUrl>
     <!--settings-->
     <PackageReleaseNotes />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
