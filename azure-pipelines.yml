@@ -23,6 +23,7 @@ steps:
   displayName: Set git variables
   env:
     BUILD_BUILDNUMBER: $(Build.BuildNumber)
+    BUILD_SOURCEBRANCHNAME: $(Build.SourceBranchName)
   inputs:
     targetType: inline
     script: |
@@ -38,11 +39,17 @@ steps:
         Write-Host "$("##vso[task.setvariable variable=VersionSuffix]")$semver"
         $ver = [Version]$var.Substring(0, $var.IndexOf('-'))
         $ver = [Version]"$($ver.Major).$($ver.Minor).$($ver.Build+1)"
+        $verFromFile = [Version] [System.IO.File]::ReadAllText("version.txt")
+        if ($ver.Major -ne $verFromFile.Major)
+        {
+          $ver = [Version]"$($verFromFile.Major).$($verFromFile.Minor)"
+        }
       }
       else
       {
         $ver = [Version]$var
       }
+      echo "Branch = $env:BUILD_SOURCEBRANCHNAME"
       echo "VersionPrefix = '$ver'"
       echo "VersionSuffix = '$semver'"
       Write-Host "$("##vso[task.setvariable variable=VersionPrefix]")$ver"
