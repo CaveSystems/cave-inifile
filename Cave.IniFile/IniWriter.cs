@@ -346,7 +346,7 @@ namespace Cave
                 fileName = FileName;
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(fileName));
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(fileName)));
             Stream stream = File.Open(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
             try
             {
@@ -397,7 +397,7 @@ namespace Cave
         }
 
         /// <summary>Converts all settings to a new reader.</summary>
-        /// <returns>Returns a new <see cref="ISettings"/> instance containing all settings.</returns>
+        /// <returns>Returns a new instance containing all settings.</returns>
         public IniReader ToReader()
         {
             return IniReader.Parse(FileName, ToString(), Properties);
