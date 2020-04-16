@@ -42,6 +42,11 @@ namespace Cave
         public string DateTimeFormat;
 
         /// <summary>
+        /// Gets or sets the string boxing character.
+        /// </summary>
+        public char BoxCharacter;
+
+        /// <summary>
         /// Gets <see cref="IniProperties"/> with default settings:
         /// Encoding=UTF8, Compression=None, InvariantCulture and no encryption.
         /// </summary>
@@ -55,6 +60,7 @@ namespace Cave
                     Compression = IniCompressionType.None,
                     Encoding = new UTF8Encoding(false),
                     DateTimeFormat = StringExtensions.InterOpDateTimeFormat,
+                    BoxCharacter = '"',
                 };
                 return result;
             }
@@ -109,7 +115,7 @@ namespace Cave
             IniProperties result = Default;
             result.Encryption = new RijndaelManaged
             {
-                BlockSize = 128
+                BlockSize = 128,
             };
             result.Encryption.Key = pkkdf1.GetBytes(result.Encryption.KeySize / 8);
             result.Encryption.IV = pkkdf1.GetBytes(result.Encryption.BlockSize / 8);
@@ -147,6 +153,7 @@ namespace Cave
                 && other.Culture == Culture
                 && other.DateTimeFormat == DateTimeFormat
                 && other.Encoding == Encoding
+                && other.BoxCharacter == BoxCharacter
                 && other.Encryption == Encryption;
         }
     }

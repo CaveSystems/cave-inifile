@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -24,6 +25,7 @@ namespace Cave
         public IniWriter()
         {
             Properties = IniProperties.Default;
+            FileName = "Default";
         }
 
         /// <summary>
@@ -34,7 +36,7 @@ namespace Cave
         public IniWriter(string fileName, IniProperties properties)
         {
             Properties = properties.Valid ? properties : IniProperties.Default;
-            FileName = fileName;
+            FileName = fileName ?? throw new ArgumentNullException(nameof(fileName));
             if (File.Exists(fileName))
             {
                 Load(IniReader.FromFile(fileName));
@@ -55,7 +57,7 @@ namespace Cave
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             FileName = reader.FileName;
@@ -153,6 +155,7 @@ namespace Cave
         /// <param name="section">Name of the section.</param>
         public void RemoveSection(string section)
         {
+            Ini.CheckName(section, nameof(section));
             if (data.ContainsKey(section))
             {
                 if (!data.Remove(section))
@@ -179,20 +182,16 @@ namespace Cave
         /// <param name="values">The values.</param>
         public void WriteSection(string section, IEnumerable values)
         {
-            if (section == null)
-            {
-                throw new ArgumentNullException("section");
-            }
-
             if (values == null)
             {
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
             }
+            Ini.CheckName(section, nameof(section));
 
             var strings = new List<string>();
             foreach (object value in values)
             {
-                strings.Add(value.ToString());
+                strings.Add($"{value}");
             }
             WriteSection(section, strings);
         }
@@ -204,18 +203,14 @@ namespace Cave
         /// <param name="lines">The lines.</param>
         public void WriteSection(string section, IEnumerable<string> lines)
         {
-            if (section == null)
-            {
-                throw new ArgumentNullException("section");
-            }
-
             if (lines == null)
             {
                 throw new ArgumentNullException("lines");
             }
+            Ini.CheckName(section, nameof(section));
 
             var result = new List<string>();
-            result.AddRange(lines);
+            result.AddRange(lines.Select(line => Ini.Escape(line, Properties.BoxCharacter)));
             data[section] = result;
         }
 
@@ -225,21 +220,40 @@ namespace Cave
         /// <typeparam name="T">The struct type.</typeparam>
         /// <param name="section">The section to write to.</param>
         /// <param name="item">The struct.</param>
+        [Obsolete("Use WriteFields instead!")]
         public void WriteStruct<T>(string section, T item)
             where T : struct
+            => WriteFields<T>(section, item);
+
+        /// <summary>
+        /// Writes all fields of the object to the specified section (replacing a present one).
+        /// </summary>
+        /// <typeparam name="T">The class type.</typeparam>
+        /// <param name="section">The section to write to.</param>
+        /// <param name="obj">The object.</param>
+        [Obsolete("Use WriteFields instead!")]
+        public void WriteObject<T>(string section, T obj)
+            where T : class
+            => WriteFields<T>(section, obj);
+
+        /// <summary>
+        /// Writes all fields of the object to the specified section (replacing a present one).
+        /// </summary>
+        /// <typeparam name="T">The class type.</typeparam>
+        /// <param name="section">The section to write to.</param>
+        /// <param name="obj">The object.</param>
+        public void WriteFields<T>(string section, T obj)
         {
-            if (section == null)
+            if (obj == null)
             {
-                throw new ArgumentNullException("section");
+                throw new ArgumentNullException(nameof(obj));
             }
 
-            var lines = new List<string>();
-            foreach (FieldInfo field in item.GetType().GetFields())
+            foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                string value = StringExtensions.ToString(field.GetValue(item), Properties.Culture);
-                lines.Add(field.Name + "=" + value);
+                var value = field.GetValue(obj);
+                WriteSetting(section, field.Name, value);
             }
-            data[section] = lines;
         }
 
         /// <summary>
@@ -248,26 +262,18 @@ namespace Cave
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
         /// <param name="obj">The object.</param>
-        public void WriteObject<T>(string section, T obj)
-            where T : class
+        public void WriteProperties<T>(string section, T obj)
         {
-            if (section == null)
-            {
-                throw new ArgumentNullException("section");
-            }
-
             if (obj == null)
             {
-                throw new ArgumentNullException("obj");
+                throw new ArgumentNullException(nameof(obj));
             }
 
-            var sections = new List<string>();
-            foreach (var property in obj.GetType().GetProperties())
+            foreach (var field in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                string value = StringExtensions.ToString(property.GetValue(obj, null), Properties.Culture);
-                sections.Add(property.Name + "=" + value);
+                var value = field.GetValue(obj, null);
+                WriteSetting(section, field.Name, value);
             }
-            data[section] = sections;
         }
 
         /// <summary>
@@ -285,29 +291,16 @@ namespace Cave
         /// Writes a setting to the ini tile (replacing a present one).
         /// </summary>
         /// <param name="section">Name of the section.</param>
-        /// <param name="name">Name of the setting.</param>
+        /// <param name="valueName">Name of the setting.</param>
         /// <param name="value">Value of the setting.</param>
-        public void WriteSetting(string section, string name, string value)
+        public void WriteSetting(string section, string valueName, string value)
         {
-            if (section == null)
-            {
-                throw new ArgumentNullException("section");
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException("name");
-            }
-
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
-
-            if (name.IndexOf('=') > -1)
-            {
-                throw new ArgumentException(string.Format("Name may not contain an equal sign!"));
-            }
+            Ini.CheckName(section, nameof(section));
+            Ini.CheckName(valueName, nameof(valueName));
 
             List<string> result;
             if (data.ContainsKey(section))
@@ -324,15 +317,15 @@ namespace Cave
             for (int i = 0; i < result.Count; i++)
             {
                 string setting = result[i].BeforeFirst('=').Trim();
-                if (string.Equals(setting, name.Trim(), StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(setting, valueName.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
-                    result[i] = name + "=" + value;
+                    result[i] = valueName + "=" + Ini.Escape(value, Properties.BoxCharacter);
                     return;
                 }
             }
 
             // add new one
-            result.Add(name + "=" + value);
+            result.Add(valueName + "=" + Ini.Escape(value, Properties.BoxCharacter));
         }
 
         /// <summary>
