@@ -251,7 +251,24 @@ namespace Cave
 
             foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
+                if (field.HasAttribute<IniIgnoreAttribute>()) { continue; }
+
                 var value = field.GetValue(obj);
+                if (field.HasAttribute<IniSectionAttribute>())
+                {
+                    var sectionAttribute = field.GetAttribute<IniSectionAttribute>();
+                    if (value is null) continue;
+                    var type = value.GetType();
+                    if (type.IsStruct())
+                    {
+                        WriteFields(sectionAttribute.Section, value);
+                    }
+                    else if (type.IsClass)
+                    {
+                        WriteProperties(sectionAttribute.Section, value);
+                    }
+                }
+                
                 WriteSetting(section, field.Name, value);
             }
         }
@@ -269,10 +286,27 @@ namespace Cave
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            foreach (var field in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var property in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
-                var value = field.GetValue(obj, null);
-                WriteSetting(section, field.Name, value);
+                if (property.HasAttribute<IniIgnoreAttribute>()) { continue; }
+
+                var value = property.GetValue(obj, null);
+                if (property.HasAttribute<IniSectionAttribute>())
+                {
+                    var sectionAttribute = property.GetAttribute<IniSectionAttribute>();
+                    if (value is null) continue;
+                    var type = value.GetType();
+                    if (type.IsStruct())
+                    {
+                        WriteFields(sectionAttribute.Section, value);
+                    }
+                    else if (type.IsClass)
+                    {
+                        WriteProperties(sectionAttribute.Section, value);
+                    }
+                }
+
+                WriteSetting(section, property.Name, value);
             }
         }
 

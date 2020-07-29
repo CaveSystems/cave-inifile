@@ -1,12 +1,10 @@
 ﻿using Cave;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Test
 {
@@ -59,6 +57,13 @@ namespace Test
             foreach (var culture in allCultures)
             {
                 Console.WriteLine($"{nameof(IniReaderWriterTest)}.cs: info TI0002: Test {culture}");
+
+                if (!(culture.Calendar is GregorianCalendar))
+                {
+                    Console.WriteLine($"- Skipping calendar {culture.Calendar}");
+                    continue;
+                }
+
                 var settings = new SettingsStructFields[10];
                 var properties = IniProperties.Default;
                 properties.Culture = culture;
@@ -84,10 +89,10 @@ namespace Test
 
         private void TestReader(IniReader reader, SettingsStructFields[] settings)
         {
-            var fields1 = typeof(SettingsStructFields).GetFields();
-            var fields2 = typeof(SettingsObjectFields).GetFields();
-            var fields3 = typeof(SettingsStructProperties).GetProperties();
-            var fields4 = typeof(SettingsObjectProperties).GetProperties();
+            var fields1 = typeof(SettingsStructFields).GetFields().OrderBy(f => f.Name).ToArray();
+            var fields2 = typeof(SettingsObjectFields).GetFields().OrderBy(f => f.Name).ToArray();
+            var fields3 = typeof(SettingsStructProperties).GetProperties().OrderBy(f => f.Name).ToArray();
+            var fields4 = typeof(SettingsObjectProperties).GetProperties().OrderBy(f => f.Name).ToArray();
             for (int i = 0; i < settings.Length; i++)
             {
                 var settings1 = reader.ReadStructFields<SettingsStructFields>($"Section {i}");
@@ -100,8 +105,8 @@ namespace Test
                     var original = fields1[n].GetValue(settings[i]);
                     var value1 = fields1[n].GetValue(settings1);
                     var value2 = fields2[n].GetValue(settings2);
-                    var value3 = fields3[n].GetValue(settings3);
-                    var value4 = fields4[n].GetValue(settings4);
+                    var value3 = fields3[n].GetValue(settings3, null);
+                    var value4 = fields4[n].GetValue(settings4, null);
                     if (original is DateTime dt && !Equals(original, value1))
                     {
                         switch (reader.Properties.Culture.ThreeLetterISOLanguageName)

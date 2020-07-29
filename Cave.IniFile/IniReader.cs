@@ -508,8 +508,8 @@ namespace Cave
 
             // iterate all fields of the struct
             var type = container.GetType();
-            var fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-            if (fields.Length == 0)
+            var fields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).Where(f => !f.HasAttribute<IniIgnoreAttribute>());
+            if (!fields.Any())
             {
                 if (!throwEx)
                 {
@@ -523,6 +523,12 @@ namespace Cave
             foreach (var field in fields)
             {
                 i++;
+
+                if (field.HasAttribute<IniSectionAttribute>())
+                {
+                    // todo: IniSectionAttribute
+                    throw new NotImplementedException("IniSectionAttribute to be implemented!");                    
+                }
 
                 // yes, can we read a value from the config for this field ?
                 string value = ReadSetting(section, field.Name);
@@ -586,8 +592,8 @@ namespace Cave
 
             // iterate all fields of the struct
             var type = container.GetType();
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            if (properties.Length == 0)
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(f => !f.HasAttribute<IniIgnoreAttribute>());
+            if (!properties.Any())
             {
                 if (!throwEx)
                 {
@@ -601,6 +607,12 @@ namespace Cave
             foreach (var property in properties)
             {
                 i++;
+
+                if (property.HasAttribute<IniSectionAttribute>())
+                {
+                    // todo: IniSectionAttribute
+                    throw new NotImplementedException("IniSectionAttribute to be implemented!");
+                }
 
                 // yes, can we read a value from the config for this field ?
                 string value = ReadSetting(section, property.Name);
