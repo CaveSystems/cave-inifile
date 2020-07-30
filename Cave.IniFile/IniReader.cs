@@ -56,8 +56,10 @@ namespace Cave
                 {
                     return File.Exists(FileName);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Trace.TraceError($"Error at {nameof(IniReader)}.{nameof(CanReload)} checking File.Exists(FileName):");
+                    Trace.TraceError($"{ex}");
                     return false;
                 }
             }
@@ -87,6 +89,7 @@ namespace Cave
         /// <returns>Returns a new <see cref="IniReader"/> instance.</returns>
         public static IniReader Parse(string name, string data, IniProperties properties = default)
         {
+            if (data == null) throw new ArgumentNullException(nameof(data));
             return new IniReader(name, data.SplitNewLine(), properties);
         }
 
@@ -97,6 +100,7 @@ namespace Cave
         /// <returns>Returns a new <see cref="IniReader"/> instance.</returns>
         public static IniReader Parse(string name, byte[] data, IniProperties properties = default)
         {
+            if (data == null) throw new ArgumentNullException(nameof(data));
             return Parse(name, Encoding.UTF8.GetString(data), properties);
         }
 
@@ -107,6 +111,7 @@ namespace Cave
         /// <returns>Returns a new <see cref="IniReader"/> instance.</returns>
         public static IniReader Parse(string name, string[] lines, IniProperties properties = default)
         {
+            if (lines == null) throw new ArgumentNullException(nameof(lines));
             return new IniReader(name, (string[])lines.Clone(), properties);
         }
 
@@ -144,7 +149,7 @@ namespace Cave
         {
             if (!CanReload)
             {
-                throw new InvalidOperationException("Cannot reload!");
+                throw new InvalidOperationException($"Reloading not possible. Check File.Exists({nameof(FileName)});");
             }
 
             lines = Parse(File.ReadAllBytes(FileName));
@@ -170,7 +175,7 @@ namespace Cave
             foreach (string line in lines)
             {
                 string trimed = line.Trim();
-                if (trimed.StartsWith("[") && trimed.EndsWith("]"))
+                if (trimed.StartsWith("[", StringComparison.OrdinalIgnoreCase) && trimed.EndsWith("]", StringComparison.OrdinalIgnoreCase))
                 {
                     var section = trimed.Substring(1, trimed.Length - 2).Trim();
                     Ini.CheckName(section, nameof(section));
@@ -219,7 +224,7 @@ namespace Cave
             for (; ++i < lines.Count;)
             {
                 string line = lines[i];
-                if (line.StartsWith("["))
+                if (line.StartsWith("[", StringComparison.OrdinalIgnoreCase))
                 {
                     break;
                 }
@@ -266,18 +271,18 @@ namespace Cave
             for (++i; i < lines.Count; i++)
             {
                 string line = lines[i].Trim();
-                if (line.StartsWith("[") && line.EndsWith("]"))
+                if (line.StartsWith("[", StringComparison.OrdinalIgnoreCase) && line.EndsWith("]", StringComparison.OrdinalIgnoreCase))
                 {
                     break;
                 }
 
                 // ignore comments
-                if (line.StartsWith("#"))
+                if (line.StartsWith("#", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                if (line.StartsWith(";"))
+                if (line.StartsWith(";", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -503,7 +508,7 @@ namespace Cave
         {
             if (container == null)
             {
-                throw new ArgumentNullException("container");
+                throw new ArgumentNullException(nameof(container));
             }
 
             // iterate all fields of the struct
@@ -516,7 +521,7 @@ namespace Cave
                     return false;
                 }
 
-                throw new ArgumentException("Container does not have any fields!");
+                throw new ArgumentException($"Container type {container.GetType()} does not have any {nameof(fields)}!", nameof(container));
             }
             bool result = true;
             int i = 0;
@@ -526,8 +531,16 @@ namespace Cave
 
                 if (field.HasAttribute<IniSectionAttribute>())
                 {
-                    // todo: IniSectionAttribute
-                    throw new NotImplementedException("IniSectionAttribute to be implemented!");                    
+                    var sectionAttribute = field.GetAttribute<IniSectionAttribute>();
+                    var fieldObject = Activator.CreateInstance(field.FieldType);
+                    switch(sectionAttribute.SettingsType)
+                    {
+                        case IniSettingsType.Fields: ReadObjectFields(sectionAttribute.Section, fieldObject); break;
+                        case IniSettingsType.Properties:ReadObjectProperties(sectionAttribute.Section, fieldObject); break;
+                        default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
+                    }
+                    field.SetValue(container, fieldObject);
+                    continue;
                 }
 
                 // yes, can we read a value from the config for this field ?
@@ -587,7 +600,7 @@ namespace Cave
         {
             if (container == null)
             {
-                throw new ArgumentNullException("container");
+                throw new ArgumentNullException(nameof(container));
             }
 
             // iterate all fields of the struct
@@ -600,7 +613,7 @@ namespace Cave
                     return false;
                 }
 
-                throw new ArgumentException("Container does not have any fields!");
+                throw new ArgumentException($"Container type {container.GetType()} does not have any {nameof(properties)}!", nameof(container));
             }
             bool result = true;
             int i = 0;
@@ -610,8 +623,16 @@ namespace Cave
 
                 if (property.HasAttribute<IniSectionAttribute>())
                 {
-                    // todo: IniSectionAttribute
-                    throw new NotImplementedException("IniSectionAttribute to be implemented!");
+                    var sectionAttribute = property.GetAttribute<IniSectionAttribute>();
+                    var fieldObject = Activator.CreateInstance(property.PropertyType);
+                    switch (sectionAttribute.SettingsType)
+                    {
+                        case IniSettingsType.Fields: ReadObjectFields(sectionAttribute.Section, fieldObject); break;
+                        case IniSettingsType.Properties: ReadObjectProperties(sectionAttribute.Section, fieldObject); break;
+                        default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
+                    }
+                    property.SetValue(container, fieldObject, null);
+                    continue;
                 }
 
                 // yes, can we read a value from the config for this field ?
@@ -674,7 +695,7 @@ namespace Cave
             string result = null;
             if (!GetValue(section, name, ref result))
             {
-                result = defaultValue ?? throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -689,11 +710,7 @@ namespace Cave
             bool result = false;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -708,11 +725,7 @@ namespace Cave
             int result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -727,11 +740,7 @@ namespace Cave
             uint result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -746,11 +755,7 @@ namespace Cave
             long result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -765,11 +770,7 @@ namespace Cave
             ulong result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -784,11 +785,7 @@ namespace Cave
             float result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -803,11 +800,7 @@ namespace Cave
             double result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -822,11 +815,7 @@ namespace Cave
             decimal result = 0;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -841,11 +830,7 @@ namespace Cave
             TimeSpan result = TimeSpan.Zero;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -860,11 +845,7 @@ namespace Cave
             DateTime result = DateTime.MinValue;
             if (!GetValue(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -881,11 +862,7 @@ namespace Cave
             var result = default(T);
             if (!GetEnum(section, name, ref result))
             {
-                if (!defaultValue.HasValue)
-                {
-                    throw new InvalidDataException(string.Format("Section [{0}] Setting {1} is unset!", section, name));
-                }
-                result = defaultValue.Value;
+                result = defaultValue ?? throw new InvalidDataException($"Section [{section}] Setting {name} is unset! You can set {nameof(defaultValue)} to define a implicit result and disable this exception.");
             }
             return result;
         }
@@ -1248,7 +1225,7 @@ namespace Cave
                         stream = new GZipStream(stream, CompressionMode.Decompress, true);
                         break;
                     case IniCompressionType.None: break;
-                    default: throw new InvalidDataException(string.Format("Unknown Compression {0}", Properties.Compression));
+                    default: throw new InvalidDataException($"Unknown compression {nameof(IniCompressionType)}.{Properties.Compression}");
                 }
                 var reader = new StreamReader(stream, Properties.Encoding);
                 string[] result = reader.ReadToEnd().SplitNewLine();

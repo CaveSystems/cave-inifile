@@ -8,7 +8,7 @@ namespace Cave
     /// <summary>
     /// Provides properties for the <see cref="IniReader"/> and <see cref="IniWriter"/> classes.
     /// </summary>
-    public struct IniProperties : IEquatable<IniProperties>
+    public struct IniProperties : IEquatable<IniProperties>, IDisposable
     {
         /// <summary>
         /// Default is case insensitive. Set this to true to match properties exactly.
@@ -104,6 +104,7 @@ namespace Cave
         /// </summary>
         /// <param name="password">Password to use.</param>
         /// <returns>Returns a new <see cref="IniProperties"/> instance.</returns>
+        [Obsolete("This method is provided for compatibility reasons only.")]
         public static IniProperties Encrypted(string password)
         {
             byte[] salt = new byte[16];
@@ -111,15 +112,34 @@ namespace Cave
             {
             }
 
-            var pkkdf1 = new PasswordDeriveBytes(password, salt);
+            var pbkdf1 = new PasswordDeriveBytes(password, salt);
+            IniProperties result = Default;
+            result.Encryption = new RijndaelManaged { BlockSize = 128, };
+#pragma warning disable CA5373 
+            result.Encryption.Key = pbkdf1.GetBytes(result.Encryption.KeySize / 8);
+            result.Encryption.IV = pbkdf1.GetBytes(result.Encryption.BlockSize / 8);
+#pragma warning restore CA5373 
+            (pbkdf1 as IDisposable)?.Dispose();
+            return result;
+        }
+
+        /// <summary>
+        /// Obtains <see cref="IniProperties"/> with default settings and simple encryption.
+        /// (This is not a security feature, use file system acl to protect from other users.)
+        /// </summary>
+        /// <param name="password">Password to use.</param>
+        /// <returns>Returns a new <see cref="IniProperties"/> instance.</returns>
+        public static IniProperties Encrypted(string password, byte[] salt, int iterations = 20000)
+        {
+            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations);
             IniProperties result = Default;
             result.Encryption = new RijndaelManaged
             {
-                BlockSize = 128,
+                BlockSize = 256,
             };
-            result.Encryption.Key = pkkdf1.GetBytes(result.Encryption.KeySize / 8);
-            result.Encryption.IV = pkkdf1.GetBytes(result.Encryption.BlockSize / 8);
-            (pkkdf1 as IDisposable)?.Dispose();
+            result.Encryption.Key = pbkdf2.GetBytes(result.Encryption.KeySize / 8);
+            result.Encryption.IV = pbkdf2.GetBytes(result.Encryption.BlockSize / 8);
+            (pbkdf2 as IDisposable)?.Dispose();
             return result;
         }
 
@@ -156,5 +176,8 @@ namespace Cave
                 && other.BoxCharacter == BoxCharacter
                 && other.Encryption == Encryption;
         }
+
+        /// <inheritdoc/>
+        public void Dispose() => (Encryption as IDisposable)?.Dispose();
     }
 }

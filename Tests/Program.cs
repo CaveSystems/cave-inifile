@@ -11,7 +11,7 @@ namespace Test
         {
             var errors = 0;
             Type[] types = typeof(Program).Assembly.GetTypes();
-            foreach (Type type in types.OrderBy(t => t.Name))
+            foreach (Type type in types.OrderByDescending(t => t.Name))
             {
                 if (!type.GetCustomAttributes(typeof(TestFixtureAttribute), false).Any())
                 {

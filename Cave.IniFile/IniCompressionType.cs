@@ -3,9 +3,8 @@
 namespace Cave
 {
     /// <summary>
-    /// Compression type.
+    /// Available ini compression types.
     /// </summary>
-    [Flags]
     public enum IniCompressionType
     {
         /// <summary>
@@ -14,12 +13,12 @@ namespace Cave
         None = 0x00,
 
         /// <summary>
-        /// Comression using deflate
+        /// Compression using deflate
         /// </summary>
         Deflate = 0x01,
 
         /// <summary>
-        /// Comression using gzip
+        /// Compression using gzip
         /// </summary>
         GZip = 0x02,
     }

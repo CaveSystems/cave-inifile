@@ -1,3 +1,4 @@
+using Cave.Collections;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -140,7 +141,7 @@ namespace Cave
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             foreach (string section in reader.GetSectionNames())
@@ -205,7 +206,7 @@ namespace Cave
         {
             if (lines == null)
             {
-                throw new ArgumentNullException("lines");
+                throw new ArgumentNullException(nameof(lines));
             }
             Ini.CheckName(section, nameof(section));
 
@@ -230,79 +231,117 @@ namespace Cave
         /// </summary>
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
-        /// <param name="obj">The object.</param>
+        /// <param name="item">The instance to write.</param>
         [Obsolete("Use WriteFields instead!")]
-        public void WriteObject<T>(string section, T obj)
+        public void WriteObject<T>(string section, T item)
             where T : class
-            => WriteFields<T>(section, obj);
+            => WriteFields<T>(section, item);
 
         /// <summary>
         /// Writes all fields of the object to the specified section (replacing a present one).
         /// </summary>
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
-        /// <param name="obj">The object.</param>
-        public void WriteFields<T>(string section, T obj)
+        /// <param name="item">The instance to write.</param>
+        public void WriteFields<T>(string section, T item)
         {
-            if (obj == null)
+            if (item == null)
             {
-                throw new ArgumentNullException(nameof(obj));
+                throw new ArgumentNullException(nameof(item));
             }
 
-            foreach (var field in obj.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            foreach (var field in item.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 if (field.HasAttribute<IniIgnoreAttribute>()) { continue; }
 
-                var value = field.GetValue(obj);
+                var value = field.GetValue(item);
+
                 if (field.HasAttribute<IniSectionAttribute>())
                 {
                     var sectionAttribute = field.GetAttribute<IniSectionAttribute>();
                     if (value is null) continue;
-                    var type = value.GetType();
-                    if (type.IsStruct())
+                    switch (sectionAttribute.SettingsType)
                     {
-                        WriteFields(sectionAttribute.Section, value);
-                    }
-                    else if (type.IsClass)
-                    {
-                        WriteProperties(sectionAttribute.Section, value);
+                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Section, value); continue;
+                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Section, value); continue;
+                        default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
                     }
                 }
-                
+                else if (!SkipRoundTripTests)
+                {
+                    //roundtrip test
+                    try
+                    {
+                        string data = StringExtensions.ToString(value, Properties.Culture);
+                        var test = TypeExtension.ConvertValue(field.FieldType, data, Properties.Culture);
+                        var container = Activator.CreateInstance(typeof(T));
+                        field.SetValue(container, test);
+                        if (!DefaultComparer.Equals(test, value))
+                        {
+                            throw new InvalidDataException($"Equals test at field {field} failed! Value = {test}, expected = {value}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidDataException($"Roundtrip w/r test for field {field} failed!", ex);
+                    }
+                }
                 WriteSetting(section, field.Name, value);
             }
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether a round trip test is done while saving settings.
+        /// </summary>
+        public bool SkipRoundTripTests { get; set; } = true; //TODO set to false
 
         /// <summary>
         /// Writes all properties of the object to the specified section (replacing a present one).
         /// </summary>
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
-        /// <param name="obj">The object.</param>
-        public void WriteProperties<T>(string section, T obj)
+        /// <param name="item">The instance to write.</param>
+        public void WriteProperties<T>(string section, T item)
         {
-            if (obj == null)
+            if (item == null)
             {
-                throw new ArgumentNullException(nameof(obj));
+                throw new ArgumentNullException(nameof(item));
             }
 
-            foreach (var property in obj.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var property in item.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (property.HasAttribute<IniIgnoreAttribute>()) { continue; }
 
-                var value = property.GetValue(obj, null);
+                var value = property.GetValue(item, null);
+
                 if (property.HasAttribute<IniSectionAttribute>())
                 {
                     var sectionAttribute = property.GetAttribute<IniSectionAttribute>();
                     if (value is null) continue;
-                    var type = value.GetType();
-                    if (type.IsStruct())
+                    switch (sectionAttribute.SettingsType)
                     {
-                        WriteFields(sectionAttribute.Section, value);
+                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Section, value); continue;
+                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Section, value); continue;
+                        default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
                     }
-                    else if (type.IsClass)
+                }
+                else if (!SkipRoundTripTests)
+                {
+                    //roundtrip test
+                    try
                     {
-                        WriteProperties(sectionAttribute.Section, value);
+                        string data = StringExtensions.ToString(value, Properties.Culture);
+                        var test = TypeExtension.ConvertValue(property.PropertyType, data, Properties.Culture);
+                        var container = Activator.CreateInstance(typeof(T));
+                        property.SetValue(container, test, null);
+                        if (!DefaultComparer.Equals(test, value))
+                        {
+                            throw new InvalidDataException($"Equals() check failed! Written: {value}, Read: {test}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidDataException($"Write/Read round trip test failed! You can swith this off with {nameof(IniWriter)}.{nameof(SkipRoundTripTests)}", ex);
                     }
                 }
 
@@ -390,7 +429,7 @@ namespace Cave
                         stream = new GZipStream(stream, CompressionMode.Compress, true);
                         break;
                     case IniCompressionType.None: break;
-                    default: throw new InvalidDataException(string.Format("Unknown Compression {0}", Properties.Compression));
+                    default: throw new InvalidDataException($"Unknown compression {nameof(IniCompressionType)}.{Properties.Compression}");
                 }
 
                 var writer = new StreamWriter(stream, Properties.Encoding);
