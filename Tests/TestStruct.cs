@@ -71,14 +71,8 @@ namespace Tests
                 Equals(this.US, other.US);
         }
 
-        public override int GetHashCode()
-        {
-            return ID.GetHashCode();
-        }
+        public override int GetHashCode() => ID.GetHashCode();
 
-        public override string ToString()
-        {
-            return StringExtensions.Join(new object[] { Arr, B, C, ConStr, D, Date, Dec, F, I, S, SB, Text, Time, UI, Uri, US }, ';');
-        }
+        public override string ToString() => StringExtensions.Join(new object[] { Arr, B, C, ConStr, D, Date, Dec, F, I, S, SB, Text, Time, UI, Uri, US }, ';');
     }
 }

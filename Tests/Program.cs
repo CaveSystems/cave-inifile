@@ -10,8 +10,8 @@ namespace Test
         static int Main(string[] args)
         {
             var errors = 0;
-            Type[] types = typeof(Program).Assembly.GetTypes();
-            foreach (Type type in types.OrderByDescending(t => t.Name))
+            var types = typeof(Program).Assembly.GetTypes();
+            foreach (var type in types.OrderByDescending(t => t.Name))
             {
                 if (!type.GetCustomAttributes(typeof(TestFixtureAttribute), false).Any())
                 {

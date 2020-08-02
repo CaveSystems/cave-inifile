@@ -11,13 +11,18 @@ namespace Cave
         /// <summary>
         /// Initializes a new instance of the <see cref="IniSectionAttribute"/> class.
         /// </summary>
-        /// <param name="section"></param>
-        public IniSectionAttribute(string section) => Section = section ?? throw new ArgumentNullException(nameof(section));
+        public IniSectionAttribute() { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IniSectionAttribute"/> class.
+        /// </summary>
+        /// <param name="name"></param>
+        public IniSectionAttribute(string name) => Name = name ?? throw new ArgumentNullException(nameof(name));
 
         /// <summary>
         /// Gets the section name.
         /// </summary>
-        public string Section { get; }
+        public string Name { get; set; }
 
         /// <summary>
         /// Gets or sets the type of elements to be serialized.

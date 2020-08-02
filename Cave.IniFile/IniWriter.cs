@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -85,39 +86,27 @@ namespace Cave
         /// <param name="data">Content to parse.</param>
         /// <param name="properties">The data properties.</param>
         /// <returns>Returns a new <see cref="IniWriter"/> instance.</returns>
-        public static IniWriter Parse(string name, string data, IniProperties properties = default)
-        {
-            return new IniWriter(IniReader.Parse(name, data, properties));
-        }
+        public static IniWriter Parse(string name, string data, IniProperties properties = default) => new IniWriter(IniReader.Parse(name, data, properties));
 
         /// <summary>Creates an new initialization writer by parsing the specified data.</summary>
         /// <param name="name">The name.</param>
         /// <param name="data">Content to parse.</param>
         /// <param name="properties">The data properties.</param>
         /// <returns>Returns a new <see cref="IniWriter"/> instance.</returns>
-        public static IniWriter Parse(string name, byte[] data, IniProperties properties = default)
-        {
-            return Parse(name, Encoding.UTF8.GetString(data), properties);
-        }
+        public static IniWriter Parse(string name, byte[] data, IniProperties properties = default) => Parse(name, Encoding.UTF8.GetString(data), properties);
 
         /// <summary>Creates an new initialization writer by parsing the specified data.</summary>
         /// <param name="name">The name.</param>
         /// <param name="lines">Content to parse.</param>
         /// <param name="properties">The content properties.</param>
         /// <returns>Returns a new <see cref="IniWriter"/> instance.</returns>
-        public static IniWriter Parse(string name, string[] lines, IniProperties properties = default)
-        {
-            return new IniWriter(IniReader.Parse(name, lines, properties));
-        }
+        public static IniWriter Parse(string name, string[] lines, IniProperties properties = default) => new IniWriter(IniReader.Parse(name, lines, properties));
 
         /// <summary>Creates an new initialization writer with the specified preexisting content.</summary>
         /// <param name="fileName">File name to read.</param>
         /// <param name="properties">The content properties.</param>
         /// <returns>Returns a new <see cref="IniWriter"/> instance.</returns>
-        public static IniWriter FromFile(string fileName, IniProperties properties = default)
-        {
-            return File.Exists(fileName) ? Parse(fileName, File.ReadAllBytes(fileName), properties) : new IniWriter(fileName, properties);
-        }
+        public static IniWriter FromFile(string fileName, IniProperties properties = default) => File.Exists(fileName) ? Parse(fileName, File.ReadAllBytes(fileName), properties) : new IniWriter(fileName, properties);
 
         /// <summary>Creates an new initialization writer with the specified preexisting content.</summary>
         /// <param name="name">The name.</param>
@@ -127,7 +116,7 @@ namespace Cave
         /// <returns>Returns a new <see cref="IniWriter"/> instance.</returns>
         public static IniWriter FromStream(string name, Stream stream, int count, IniProperties properties = default)
         {
-            byte[] data = stream.ReadBlock(count);
+            var data = stream.ReadBlock(count);
             return Parse(name, data, properties);
         }
 
@@ -144,7 +133,7 @@ namespace Cave
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            foreach (string section in reader.GetSectionNames())
+            foreach (var section in reader.GetSectionNames())
             {
                 data[section] = new List<string>(reader.ReadSection(section, false));
             }
@@ -171,10 +160,7 @@ namespace Cave
         /// </summary>
         /// <param name="section">Name of the section.</param>
         /// <param name="value">The value.</param>
-        public void WriteSection(string section, string value)
-        {
-            WriteSection(section, value.SplitNewLine());
-        }
+        public void WriteSection(string section, string value) => WriteSection(section, value.SplitNewLine());
 
         /// <summary>
         /// Writes (replaces) a whole section at the ini.
@@ -190,7 +176,7 @@ namespace Cave
             Ini.CheckName(section, nameof(section));
 
             var strings = new List<string>();
-            foreach (object value in values)
+            foreach (var value in values)
             {
                 strings.Add($"{value}");
             }
@@ -262,8 +248,8 @@ namespace Cave
                     if (value is null) continue;
                     switch (sectionAttribute.SettingsType)
                     {
-                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Section, value); continue;
-                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Section, value); continue;
+                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Name ?? field.Name, value); continue;
+                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Name ?? field.Name, value); continue;
                         default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
                     }
                 }
@@ -272,9 +258,9 @@ namespace Cave
                     //roundtrip test
                     try
                     {
-                        string data = StringExtensions.ToString(value, Properties.Culture);
+                        var data = StringExtensions.ToString(value, Properties.Culture);
                         var test = TypeExtension.ConvertValue(field.FieldType, data, Properties.Culture);
-                        var container = Activator.CreateInstance(typeof(T));
+                        var container = (T)Activator.CreateInstance(typeof(T));
                         field.SetValue(container, test);
                         if (!DefaultComparer.Equals(test, value))
                         {
@@ -293,7 +279,7 @@ namespace Cave
         /// <summary>
         /// Gets or sets a value indicating whether a round trip test is done while saving settings.
         /// </summary>
-        public bool SkipRoundTripTests { get; set; } = true; //TODO set to false
+        public bool SkipRoundTripTests { get; set; }
 
         /// <summary>
         /// Writes all properties of the object to the specified section (replacing a present one).
@@ -301,6 +287,7 @@ namespace Cave
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
         /// <param name="item">The instance to write.</param>
+        [SuppressMessage("Globalization", "CA1303")]
         public void WriteProperties<T>(string section, T item)
         {
             if (item == null)
@@ -320,8 +307,8 @@ namespace Cave
                     if (value is null) continue;
                     switch (sectionAttribute.SettingsType)
                     {
-                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Section, value); continue;
-                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Section, value); continue;
+                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Name ?? property.Name, value); continue;
+                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Name ?? property.Name, value); continue;
                         default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
                     }
                 }
@@ -330,7 +317,7 @@ namespace Cave
                     //roundtrip test
                     try
                     {
-                        string data = StringExtensions.ToString(value, Properties.Culture);
+                        var data = StringExtensions.ToString(value, Properties.Culture);
                         var test = TypeExtension.ConvertValue(property.PropertyType, data, Properties.Culture);
                         var container = Activator.CreateInstance(typeof(T));
                         property.SetValue(container, test, null);
@@ -355,10 +342,7 @@ namespace Cave
         /// <param name="section">Name of the section.</param>
         /// <param name="name">Name of the setting.</param>
         /// <param name="value">Value of the setting.</param>
-        public void WriteSetting(string section, string name, object value)
-        {
-            WriteSetting(section, name, StringExtensions.ToString(value, Properties.Culture));
-        }
+        public void WriteSetting(string section, string name, object value) => WriteSetting(section, name, StringExtensions.ToString(value, Properties.Culture));
 
         /// <summary>
         /// Writes a setting to the ini tile (replacing a present one).
@@ -387,9 +371,9 @@ namespace Cave
             }
 
             // try to replace first
-            for (int i = 0; i < result.Count; i++)
+            for (var i = 0; i < result.Count; i++)
             {
-                string setting = result[i].BeforeFirst('=').Trim();
+                var setting = result[i].BeforeFirst('=').Trim();
                 if (string.Equals(setting, valueName.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     result[i] = valueName + "=" + Ini.Escape(value, Properties.BoxCharacter);
@@ -433,11 +417,11 @@ namespace Cave
                 }
 
                 var writer = new StreamWriter(stream, Properties.Encoding);
-                foreach (string section in data.Keys)
+                foreach (var section in data.Keys)
                 {
                     writer.WriteLine("[" + section + "]");
-                    bool allowOneEmpty = false;
-                    foreach (string setting in data[section])
+                    var allowOneEmpty = false;
+                    foreach (var setting in data[section])
                     {
                         if (string.IsNullOrEmpty(setting) || (setting.Trim().Length == 0))
                         {
@@ -464,10 +448,7 @@ namespace Cave
 
         /// <summary>Converts all settings to a new reader.</summary>
         /// <returns>Returns a new instance containing all settings.</returns>
-        public IniReader ToReader()
-        {
-            return IniReader.Parse(FileName, ToString(), Properties);
-        }
+        public IniReader ToReader() => IniReader.Parse(FileName, ToString(), Properties);
 
         /// <summary>
         /// Retrieves the whole data as string.
@@ -477,11 +458,11 @@ namespace Cave
         {
             using (var writer = new StringWriter())
             {
-                foreach (string section in data.Keys)
+                foreach (var section in data.Keys)
                 {
                     writer.WriteLine("[" + section + "]");
-                    bool allowOneEmpty = false;
-                    foreach (string setting in data[section])
+                    var allowOneEmpty = false;
+                    foreach (var setting in data[section])
                     {
                         if (string.IsNullOrEmpty(setting) || (setting.Trim().Length == 0))
                         {

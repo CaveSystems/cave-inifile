@@ -10,7 +10,7 @@ namespace Cave
             {
                 throw new ArgumentNullException(paramName);
             }
-            for (int i = 0; i < value.Length; i++)
+            for (var i = 0; i < value.Length; i++)
             {
                 switch (value[i])
                 {
@@ -30,7 +30,7 @@ namespace Cave
 
         internal static string Escape(string value, char boxChar)
         {
-            bool box = value.IndexOfAny(new[] { boxChar, '#', ' ' }) > -1;
+            var box = value.IndexOfAny(new[] { boxChar, '#', ' ' }) > -1;
             value = value.EscapeUtf8();
             box |= value.IndexOf('\\') > -1 || value.Trim() != value;
             if (box)

@@ -25,7 +25,7 @@ namespace Test
                 Assert.AreEqual(s, value);
             }
 
-            for (int i = 0; i < 255; i++)
+            for (var i = 0; i < 255; i++)
             {
                 Test(((char)i).ToString());
             }
@@ -33,10 +33,10 @@ namespace Test
             var random = new Random();
             foreach (var encodingInfo in Encoding.GetEncodings())
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                 {
                     var encoding = encodingInfo.GetEncoding();
-                    byte[] buf = encoding.GetBytes(new string(' ', 100));
+                    var buf = encoding.GetBytes(new string(' ', 100));
                     random.NextBytes(buf);
                     var str = encoding.GetString(buf);
 
@@ -74,7 +74,7 @@ namespace Test
                     settings[0] = setting;
                     writer.WriteFields($"Section 0", setting);
                 }
-                for (int i = 1; i < settings.Length; i++)
+                for (var i = 1; i < settings.Length; i++)
                 {
                     var setting = SettingsStructFields.Random(culture);
                     settings[i] = setting;
@@ -93,14 +93,14 @@ namespace Test
             var fields2 = typeof(SettingsObjectFields).GetFields().OrderBy(f => f.Name).ToArray();
             var fields3 = typeof(SettingsStructProperties).GetProperties().OrderBy(f => f.Name).ToArray();
             var fields4 = typeof(SettingsObjectProperties).GetProperties().OrderBy(f => f.Name).ToArray();
-            for (int i = 0; i < settings.Length; i++)
+            for (var i = 0; i < settings.Length; i++)
             {
                 var settings1 = reader.ReadStructFields<SettingsStructFields>($"Section {i}");
                 var settings2 = reader.ReadObjectFields<SettingsObjectFields>($"Section {i}");
                 var settings3 = reader.ReadStructProperties<SettingsStructProperties>($"Section {i}");
                 var settings4 = reader.ReadObjectProperties<SettingsObjectProperties>($"Section {i}");
 
-                for (int n = 0; n < fields1.Length; n++)
+                for (var n = 0; n < fields1.Length; n++)
                 {
                     var original = fields1[n].GetValue(settings[i]);
                     var value1 = fields1[n].GetValue(settings1);

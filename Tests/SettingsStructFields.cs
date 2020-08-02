@@ -34,14 +34,14 @@ namespace Test
             char[] str;
             if (culture == null)
             {
-                byte[] buf = new byte[len * 2];
+                var buf = new byte[len * 2];
                 random.NextBytes(buf);
                 str = Encoding.Unicode.GetString(buf).ToCharArray();
             }
             else
             {
                 var encoding = Encoding.GetEncoding(culture.TextInfo.ANSICodePage);
-                byte[] buf = encoding.GetBytes(new string(' ', len));
+                var buf = encoding.GetBytes(new string(' ', len));
                 random.NextBytes(buf);
                 str = encoding.GetString(buf).ToCharArray();
             }
