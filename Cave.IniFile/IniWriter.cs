@@ -229,7 +229,21 @@ namespace Cave
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
         /// <param name="item">The instance to write.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If type is object.</exception>
         public void WriteFields<T>(string section, T item)
+        {
+            var type = typeof(T);
+            if (type == typeof(object)) throw new ArgumentOutOfRangeException(nameof(T));
+            WriteFields(section, typeof(T), item);
+        }
+
+        /// <summary>
+        /// Writes all fields of the object to the specified section (replacing a present one).
+        /// </summary>
+        /// <param name="section">The section to write to.</param>
+        /// <param name="type">Type of <paramref name="item"/></param>
+        /// <param name="item">The instance to write.</param>
+        public void WriteFields(string section, Type type, object item)
         {
             if (item == null)
             {
@@ -246,10 +260,16 @@ namespace Cave
                 {
                     var sectionAttribute = field.GetAttribute<IniSectionAttribute>();
                     if (value is null) continue;
+
+                    if (value is IEnumerable enumerable)
+                    {
+                        throw new NotSupportedException("Arrays are not (yet) supported!");
+                    }
+
                     switch (sectionAttribute.SettingsType)
                     {
-                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Name ?? field.Name, value); continue;
-                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Name ?? field.Name, value); continue;
+                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Name ?? field.Name, field.FieldType, value); continue;
+                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Name ?? field.Name, field.FieldType, value); continue;
                         default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
                     }
                 }
@@ -260,7 +280,7 @@ namespace Cave
                     {
                         var data = StringExtensions.ToString(value, Properties.Culture);
                         var test = TypeExtension.ConvertValue(field.FieldType, data, Properties.Culture);
-                        var container = (T)Activator.CreateInstance(typeof(T));
+                        var container = Activator.CreateInstance(type);
                         field.SetValue(container, test);
                         if (!DefaultComparer.Equals(test, value))
                         {
@@ -287,8 +307,22 @@ namespace Cave
         /// <typeparam name="T">The class type.</typeparam>
         /// <param name="section">The section to write to.</param>
         /// <param name="item">The instance to write.</param>
+        /// <exception cref="ArgumentOutOfRangeException">If type is object.</exception>
         [SuppressMessage("Globalization", "CA1303")]
         public void WriteProperties<T>(string section, T item)
+        {
+            var type = typeof(T);
+            if (type == typeof(object)) throw new ArgumentOutOfRangeException(nameof(T)); 
+            WriteProperties(section, typeof(T), item);
+        }
+
+        /// <summary>
+        /// Writes all properties of the object to the specified section (replacing a present one).
+        /// </summary>
+        /// <param name="section">The section to write to.</param>
+        /// <param name="type">Type of <paramref name="item"/></param>
+        /// <param name="item">The instance to write.</param>
+        public void WriteProperties(string section, Type type, object item)
         {
             if (item == null)
             {
@@ -305,10 +339,16 @@ namespace Cave
                 {
                     var sectionAttribute = property.GetAttribute<IniSectionAttribute>();
                     if (value is null) continue;
+
+                    if (value is IEnumerable enumerable)
+                    {
+                        throw new NotSupportedException("Arrays are not (yet) supported!");
+                    }
+                    
                     switch (sectionAttribute.SettingsType)
                     {
-                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Name ?? property.Name, value); continue;
-                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Name ?? property.Name, value); continue;
+                        case IniSettingsType.Fields: WriteFields(sectionAttribute.Name ?? property.Name, property.PropertyType, value); continue;
+                        case IniSettingsType.Properties: WriteProperties(sectionAttribute.Name ?? property.Name, property.PropertyType, value); continue;
                         default: throw new NotImplementedException($"IniSettingsType.{sectionAttribute.SettingsType} not implemented at {GetType()}!");
                     }
                 }
@@ -319,7 +359,7 @@ namespace Cave
                     {
                         var data = StringExtensions.ToString(value, Properties.Culture);
                         var test = TypeExtension.ConvertValue(property.PropertyType, data, Properties.Culture);
-                        var container = Activator.CreateInstance(typeof(T));
+                        var container = Activator.CreateInstance(type);
                         property.SetValue(container, test, null);
                         if (!DefaultComparer.Equals(test, value))
                         {
