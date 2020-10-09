@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Test
+namespace Tests
 {
     [Flags]
     public enum SettingFlagEnum

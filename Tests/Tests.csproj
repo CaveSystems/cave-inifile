@@ -5,7 +5,6 @@
     <IsPackable>false</IsPackable>
     <ApplicationIcon />
     <OutputType>Exe</OutputType>
-    <StartupObject>Test.Program</StartupObject>
     <RootNamespace>Test</RootNamespace>
   </PropertyGroup>
 

@@ -3,32 +3,36 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Test;
 
 namespace Tests
 {
     [TestFixture]
     public class NestedInifile
     {
-        public class NestedRoot
+        public class NestedRoot : IEquatable<NestedRoot>
         {
             public static NestedRoot Random(CultureInfo culture)
             {
                 var result = new NestedRoot();
-                result.Sub1.Add(SettingsObjectFields.Random(culture));
-                result.Sub1.Add(SettingsObjectFields.Random(culture));
-                result.Sub2.Add("test1", SettingsStructFields.Random(culture));
-                result.Sub2.Add("test2", SettingsStructFields.Random(culture));
+                result.Sub1 = SettingsObjectFields.Random(culture);
+                result.Sub2 = SettingsStructFields.Random(culture);
                 result.Sub3 = SettingsObjectProperties.Random(culture);
                 result.Sub4 = SettingsStructProperties.Random(culture);
+                result.SomethingSpecial = new Random().NextDouble();
                 return result;
             }
 
+            public bool Equals(NestedRoot other) => 
+                Equals(Sub1, other.Sub1) &&
+                Equals(Sub2, other.Sub2) && 
+                Equals(Sub3, other.Sub3) && 
+                Equals(Sub4, other.Sub4);
+
             [IniSection]
-            public IList<SettingsObjectFields> Sub1 { get; set; } = new List<SettingsObjectFields>();
+            public SettingsObjectFields Sub1 { get; set; }
 
             [IniSection(Name = "Section2")]
-            public IDictionary<string, SettingsStructFields> Sub2 { get; set; } = new Dictionary<string, SettingsStructFields>();
+            public SettingsStructFields Sub2 { get; set; }
 
             [IniSection(SettingsType = IniSettingsType.Properties)]
             public SettingsObjectProperties Sub3 { get; set; }
@@ -37,18 +41,18 @@ namespace Tests
             public SettingsStructProperties Sub4 { get; set; }
 
             [IniIgnore]
-            public object SomethingSpecial { get; set; } = new Random();
+            public object SomethingSpecial { get; set; } 
         }
 
         [Test]
-        public void Test()
+        public void NestedInifileTest()
         {
             var writer = new IniWriter();
             var test = NestedRoot.Random(CultureInfo.InvariantCulture);
             writer.WriteProperties("test", test);
 
             var reader = writer.ToReader();
-            var current = reader.ReadObjectProperties<NestedRoot>("test");
+            var current = reader.ReadObjectProperties<NestedRoot>("test");            
             Assert.AreEqual(test, current);
         }
     }

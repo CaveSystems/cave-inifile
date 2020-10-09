@@ -2,9 +2,9 @@
 using System.Globalization;
 using System.Text;
 
-namespace Test
+namespace Tests
 {
-    public class SettingsObjectProperties
+    public class SettingsObjectProperties : IEquatable<SettingsObjectProperties>
     {
         public string SampleString { get; set; }
         public sbyte SampleInt8 { get; set; }
@@ -67,6 +67,55 @@ namespace Test
                 SampleUInt64 = ((ulong)random.Next() + (ulong)random.Next()) * (ulong)random.Next(),
                 SampleNullableUInt32 = random.Next(1, 100) < 20 ? null : (uint?)random.Next(),
             };
+        }
+
+        public bool Equals(SettingsObjectProperties other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return SampleString == other.SampleString && SampleInt8 == other.SampleInt8 &&
+                   SampleInt16 == other.SampleInt16 && SampleInt32 == other.SampleInt32 &&
+                   SampleInt64 == other.SampleInt64 && SampleUInt8 == other.SampleUInt8 &&
+                   SampleUInt16 == other.SampleUInt16 && SampleUInt32 == other.SampleUInt32 &&
+                   SampleUInt64 == other.SampleUInt64 && SampleFloat.Equals(other.SampleFloat) &&
+                   SampleDouble.Equals(other.SampleDouble) && SampleDecimal == other.SampleDecimal &&
+                   SampleBool == other.SampleBool && SampleDateTime.Equals(other.SampleDateTime) &&
+                   SampleTimeSpan.Equals(other.SampleTimeSpan) && SampleEnum == other.SampleEnum &&
+                   SampleFlagEnum == other.SampleFlagEnum && SampleNullableUInt32 == other.SampleNullableUInt32;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((SettingsObjectProperties)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (SampleString != null ? SampleString.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ SampleInt8.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleInt16.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleInt32;
+                hashCode = (hashCode * 397) ^ SampleInt64.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleUInt8.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleUInt16.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)SampleUInt32;
+                hashCode = (hashCode * 397) ^ SampleUInt64.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleFloat.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleDouble.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleDecimal.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleBool.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleDateTime.GetHashCode();
+                hashCode = (hashCode * 397) ^ SampleTimeSpan.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)SampleEnum;
+                hashCode = (hashCode * 397) ^ (int)SampleFlagEnum;
+                hashCode = (hashCode * 397) ^ SampleNullableUInt32.GetHashCode();
+                return hashCode;
+            }
         }
     }
 }

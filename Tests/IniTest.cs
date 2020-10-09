@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Test
+namespace Tests
 {
     [TestFixture]
     public class IniTest
