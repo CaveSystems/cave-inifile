@@ -197,7 +197,7 @@ namespace Cave
             Ini.CheckName(section, nameof(section));
 
             var result = new List<string>();
-            result.AddRange(lines.Select(line => Ini.Escape(line, Properties.BoxCharacter)));
+            result.AddRange(lines.Select(line => Ini.Escape(line, Properties)));
             data[section] = result;
         }
 
@@ -416,13 +416,13 @@ namespace Cave
                 var setting = result[i].BeforeFirst('=').Trim();
                 if (string.Equals(setting, valueName.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
-                    result[i] = valueName + "=" + Ini.Escape(value, Properties.BoxCharacter);
+                    result[i] = valueName + "=" + Ini.Escape(value, Properties);
                     return;
                 }
             }
 
             // add new one
-            result.Add(valueName + "=" + Ini.Escape(value, Properties.BoxCharacter));
+            result.Add(valueName + "=" + Ini.Escape(value, Properties));
         }
 
         /// <summary>

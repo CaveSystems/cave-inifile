@@ -28,25 +28,41 @@ namespace Cave
             }
         }
 
-        internal static string Escape(string value, char boxChar)
+        internal static string Escape(string value, IniProperties properties)
         {
-            var box = value.IndexOfAny(new[] { boxChar, '#', ' ' }) > -1;
-            value = value.EscapeUtf8();
+            var box = value.IndexOfAny(new[] { properties.BoxCharacter, '#', ' ' }) > -1;
+            if (!properties.DisableEscaping)
+            {
+                value = value.EscapeUtf8();
+            }
+
             box |= value.IndexOf('\\') > -1 || value.Trim() != value;
             if (box)
             {
-                value = value.Box(boxChar);
+                value = value.Box(properties.BoxCharacter);
             }
             return value;
         }
 
-        internal static string Unescape(string value, char boxChar)
+        internal static string Unescape(string value, IniProperties properties)
         {
-            if (value.IsBoxed(boxChar, boxChar))
+            if (value.IsBoxed(properties.BoxCharacter, properties.BoxCharacter))
             {
-                value = value.Unbox(boxChar);
+                value = value.Unbox(properties.BoxCharacter);
             }
-            value = value.Unescape();
+
+            if (!properties.DisableEscaping)
+            {
+                try
+                {
+                    value = value.Unescape();
+                }
+                catch
+                {
+                    // unescape failed, this may be a windows path
+                }
+            }
+
             return value;
         }
     }

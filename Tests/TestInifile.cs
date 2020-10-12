@@ -1,10 +1,5 @@
 ﻿using Cave;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Tests
 {
@@ -27,6 +22,20 @@ namespace Tests
                 var current = reader.ReadStructFields<TestStruct>($"struct{i}");
                 Assert.AreEqual(expected, current);
             }
+        }
+
+        [Test]
+        public void TestReader()
+        {
+            var fileName = "c:\\temp\\lala 123\\file name.exe";
+            var test =
+                "[Service]\r\n" +
+                $"Path1 = {fileName}\r\n" +
+                $"Path2 = {fileName}\r\n";
+
+            var ini = IniReader.Parse("ini", test);
+            Assert.AreEqual(fileName, ini.ReadSetting("Service", "Path1"));
+            Assert.AreEqual(fileName, ini.ReadSetting("Service", "Path2"));
         }
     }
 }

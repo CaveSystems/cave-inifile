@@ -15,12 +15,17 @@ namespace Cave
     public struct IniProperties : IEquatable<IniProperties>, IDisposable
     {
         /// <summary>
+        /// Disable un/-escaping of ascii characters (backslash escaping).
+        /// </summary>
+        public bool DisableEscaping;
+
+        /// <summary>
         /// Default is case insensitive. Set this to true to match properties exactly.
         /// </summary>
         public bool CaseSensitive;
 
         /// <summary>
-        /// Use simple synchroneous encryption to protect from users eyes ?
+        /// Use simple synchronous encryption to protect from users eyes ?
         /// (This is not a security feature, use file system acl to protect from other users.)
         /// </summary>
         public SymmetricAlgorithm Encryption;

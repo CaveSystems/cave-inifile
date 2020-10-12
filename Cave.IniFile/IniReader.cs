@@ -306,7 +306,7 @@ namespace Cave
 
                         if (value.IndexOf(Properties.BoxCharacter) > -1)
                         {
-                            return Ini.Unescape(value, Properties.BoxCharacter);
+                            return Ini.Unescape(value, Properties);
                         }
                         var comment = value.IndexOf('#');
                         if (comment > -1)
@@ -314,7 +314,7 @@ namespace Cave
                             value = value.Substring(0, comment).Trim();
                         }
 
-                        return Ini.Unescape(value, Properties.BoxCharacter);
+                        return Ini.Unescape(value, Properties);
                     }
                 }
             }
@@ -1158,7 +1158,7 @@ namespace Cave
             var result = new string[lines.Count];
             for (var i = 0; i < lines.Count; i++)
             {
-                result[i] = Ini.Escape(lines[i], Properties.BoxCharacter);
+                result[i] = Ini.Escape(lines[i], Properties);
             }
             lines.CopyTo(result, 0);
             return result;
