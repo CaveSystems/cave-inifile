@@ -6,6 +6,7 @@ namespace Cave
     /// Attribute for marking fields or properties for serialization into ini file sections.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
+    [Obsolete("Update to nuget package Cave.IO!")]
     public class IniSectionAttribute : Attribute
     {
         /// <summary>

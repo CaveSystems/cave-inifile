@@ -12,6 +12,7 @@ namespace Cave
     /// </summary>
     [SuppressMessage("Design", "CA1001")]
     [SuppressMessage("Design", "CA1051")]
+    [Obsolete("Update to nuget package Cave.IO!")]
     public struct IniProperties : IEquatable<IniProperties>, IDisposable
     {
         /// <summary>

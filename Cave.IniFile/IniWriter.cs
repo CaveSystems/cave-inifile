@@ -17,6 +17,7 @@ namespace Cave
     /// Provides a fast and simple ini writer class.
     /// </summary>
     [DebuggerDisplay("{" + nameof(FileName) + "}")]
+    [Obsolete("Update to nuget package Cave.IO!")]
     public class IniWriter
     {
         readonly Dictionary<string, List<string>> data = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);

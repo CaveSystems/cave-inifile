@@ -5,6 +5,7 @@ namespace Cave
     /// <summary>
     /// Available ini compression types.
     /// </summary>
+    [Obsolete("Update to nuget package Cave.IO!")]
     public enum IniCompressionType
     {
         /// <summary>

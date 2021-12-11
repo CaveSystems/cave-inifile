@@ -2,7 +2,11 @@
 
 namespace Cave
 {
-    internal static class Ini
+    /// <summary>
+    /// Provides access to common ini file.
+    /// </summary>
+    [Obsolete("Update to nuget package Cave.IO!")]
+    public static class Ini
     {
         internal static void CheckName(string value, string paramName)
         {
@@ -64,6 +68,69 @@ namespace Cave
             }
 
             return value;
+        }
+
+        /// <summary>Gets the local user ini file.</summary>
+        /// <value>The local user ini file.</value>
+        public static IniReader GetLocalUserIniFile()
+        {
+            var location = new FileLocation(root: RootLocation.LocalUserConfig, extension: PlatformExtension);
+            FileSystem.TouchFile(location);
+            return IniReader.FromFile(location);
+        }
+
+        /// <summary>Gets the local machine ini file.</summary>
+        /// <value>The local machine ini file.</value>
+        public static IniReader GetLocalMachineIniFile()
+        {
+            var location = new FileLocation(root: RootLocation.AllUserConfig, extension: PlatformExtension);
+            FileSystem.TouchFile(location);
+            return IniReader.FromFile(location);
+        }
+
+        /// <summary>Gets the user ini file.</summary>
+        /// <value>The user ini file.</value>
+        public static IniReader GetUserIniFile()
+        {
+            var location = new FileLocation(root: RootLocation.RoamingUserConfig, extension: PlatformExtension);
+            FileSystem.TouchFile(location);
+            return IniReader.FromFile(location);
+        }
+
+        /// <summary>Gets the program ini file.</summary>
+        /// <value>The program ini file.</value>
+        public static IniReader GetProgramIniFile()
+        {
+            var location = new FileLocation(root: RootLocation.Program, extension: PlatformExtension);
+            FileSystem.TouchFile(location);
+            return IniReader.FromFile(location);
+        }
+
+        /// <summary>
+        /// Gets the platform specific extension of the configuration file.
+        /// </summary>
+        public static string PlatformExtension
+        {
+            get
+            {
+                switch (Platform.Type)
+                {
+                    case PlatformType.CompactFramework:
+                    case PlatformType.Windows:
+                    case PlatformType.Xbox:
+                        return ".ini";
+                    case PlatformType.Linux:
+                    case PlatformType.BSD:
+                    case PlatformType.Android:
+                    case PlatformType.Solaris:
+                    case PlatformType.UnknownUnix:
+                    case PlatformType.Unknown:
+                    case PlatformType.MacOS:
+                        return ".conf";
+                    default:
+                        return ".conf";
+                }
+            }
         }
     }
 }

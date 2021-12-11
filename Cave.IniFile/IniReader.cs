@@ -16,6 +16,7 @@ namespace Cave
     /// Provides a fast and simple initialization data reader class.
     /// </summary>
     [DebuggerDisplay("{" + nameof(FileName) + "}")]
+    [Obsolete("Update to nuget package Cave.IO!")]
     public class IniReader
     {
         /// <summary>

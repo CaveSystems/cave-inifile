@@ -1,8 +1,11 @@
-﻿namespace Cave
+﻿using System;
+
+namespace Cave
 {
     /// <summary>
     /// Provides available types of ini settings serialization.
     /// </summary>
+    [Obsolete("Update to nuget package Cave.IO!")]
     public enum IniSettingsType
     {
         /// <summary>
