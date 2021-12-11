@@ -1,12 +1,20 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using NUnit.Framework;
 
 namespace Tests
 {
     class Program
     {
+        static Program()
+        {
+#if NET5_0_OR_GREATER || NETCOREAPP3_1_OR_GREATER
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+#endif
+        }
+
         static int Main(string[] args)
         {
             var errors = 0;
