@@ -41,7 +41,12 @@ namespace Tests
             public SettingsStructProperties Sub4 { get; set; }
 
             [IniIgnore]
-            public object SomethingSpecial { get; set; } 
+            public object SomethingSpecial { get; set; }
+
+            public override bool Equals(object obj)
+            {
+                return Equals(obj as NestedRoot);
+            }
         }
 
         [Test]
